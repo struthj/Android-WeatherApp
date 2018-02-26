@@ -1,7 +1,7 @@
 # Assignment 4
 **Due by 11:59pm on Monday, 3/12/2018**
 
-**Demo due by 11:59pm on Friday, 3/23/2018**
+**Demo due by 11:59pm on Tuesday, 3/20/2018**
 
 In this assignment, we'll incorporate an SQLite database into our weather app to save the locations for which the user views forecasts.  There are a few different tasks associated with this assignment, described below.  This repository provides you with some starter code that implements the weather app from Assignment 3.
 
