@@ -55,7 +55,7 @@ public class MainActivity extends AppCompatActivity
 
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         sharedPreferences.registerOnSharedPreferenceChangeListener(this);
-        updateForecast(sharedPreferences);
+        loadForecast(sharedPreferences, true);
     }
 
     @Override
@@ -92,7 +92,7 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-    public void updateForecast(SharedPreferences sharedPreferences) {
+    public void loadForecast(SharedPreferences sharedPreferences, boolean initialLoad) {
         String forecastLocation = sharedPreferences.getString(
                 getString(R.string.pref_location_key),
                 getString(R.string.pref_location_default_value)
@@ -109,7 +109,7 @@ public class MainActivity extends AppCompatActivity
         Bundle loaderArgs = new Bundle();
         loaderArgs.putString(FORECAST_URL_KEY, forecastURL);
         LoaderManager loaderManager = getSupportLoaderManager();
-        if (loaderManager.getLoader(FORECAST_LOADER_ID) == null) {
+        if (initialLoad) {
             loaderManager.initLoader(FORECAST_LOADER_ID, loaderArgs, this);
         } else {
             loaderManager.restartLoader(FORECAST_LOADER_ID, loaderArgs, this);
@@ -162,6 +162,6 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-        updateForecast(sharedPreferences);
+        loadForecast(sharedPreferences, false);
     }
 }
