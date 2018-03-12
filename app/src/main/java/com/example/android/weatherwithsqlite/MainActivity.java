@@ -2,13 +2,19 @@ package com.example.android.weatherwithsqlite;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.Configuration;
 import android.net.Uri;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.support.design.widget.NavigationView;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
+import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.preference.PreferenceManager;
 import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.Menu;
@@ -22,7 +28,7 @@ import com.example.android.weatherwithsqlite.utils.OpenWeatherMapUtils;
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity
-        implements ForecastAdapter.OnForecastItemClickListener, LoaderManager.LoaderCallbacks<String>, SharedPreferences.OnSharedPreferenceChangeListener {
+        implements ForecastAdapter.OnForecastItemClickListener, LoaderManager.LoaderCallbacks<String>, SharedPreferences.OnSharedPreferenceChangeListener, NavigationView.OnNavigationItemSelectedListener {
 
     private static final String TAG = MainActivity.class.getSimpleName();
     private static final String FORECAST_URL_KEY = "forecastURL";
@@ -34,6 +40,9 @@ public class MainActivity extends AppCompatActivity
     private TextView mLoadingErrorMessageTV;
     private ForecastAdapter mForecastAdapter;
 
+    private DrawerLayout mDrawerLayout;
+    private ActionBarDrawerToggle mDrawerToggle;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -43,7 +52,7 @@ public class MainActivity extends AppCompatActivity
         getSupportActionBar().setElevation(0);
 
         mForecastLocationTV = findViewById(R.id.tv_forecast_location);
-
+        mDrawerLayout = findViewById(R.id.drawer_layout);
         mLoadingIndicatorPB = findViewById(R.id.pb_loading_indicator);
         mLoadingErrorMessageTV = findViewById(R.id.tv_loading_error_message);
         mForecastItemsRV = findViewById(R.id.rv_forecast_items);
@@ -52,6 +61,14 @@ public class MainActivity extends AppCompatActivity
         mForecastItemsRV.setAdapter(mForecastAdapter);
         mForecastItemsRV.setLayoutManager(new LinearLayoutManager(this));
         mForecastItemsRV.setHasFixedSize(true);
+
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        getSupportActionBar().setHomeButtonEnabled(true);
+
+        mDrawerToggle = new ActionBarDrawerToggle(this, mDrawerLayout, R.string.drawer_open, R.string.drawer_close);
+        mDrawerLayout.addDrawerListener(mDrawerToggle);
+        NavigationView navigationView = findViewById(R.id.nv_navigation_drawer);
+        navigationView.setNavigationItemSelectedListener(this);
 
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         sharedPreferences.registerOnSharedPreferenceChangeListener(this);
@@ -78,17 +95,23 @@ public class MainActivity extends AppCompatActivity
     }
 
     @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         switch (item.getItemId()) {
             case R.id.action_location:
                 showForecastLocationInMap();
                 return true;
+            case R.id.nav_saved_search_results:
+                mDrawerLayout.closeDrawers();
+                //Intent savedResultsIntent = new Intent(this, SavedSearchResultsActivity.class);
+                //startActivity(savedResultsIntent);
+                return true;
             case R.id.action_settings:
+                mDrawerLayout.closeDrawers();
                 Intent settingsIntent = new Intent(this, SettingsActivity.class);
                 startActivity(settingsIntent);
                 return true;
             default:
-                return super.onOptionsItemSelected(item);
+                return false;
         }
     }
 
@@ -163,5 +186,22 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
         loadForecast(sharedPreferences, false);
+    }
+
+    @Override
+    protected void onPostCreate(@Nullable Bundle savedInstanceState) {
+        super.onPostCreate(savedInstanceState);
+        mDrawerToggle.syncState();
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        mDrawerToggle.onConfigurationChanged(newConfig);
+    }
+
+    @Override
+    public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+        return false;
     }
 }

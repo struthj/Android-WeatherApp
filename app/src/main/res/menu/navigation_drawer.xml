@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/action_location"
+        android:icon="@drawable/ic_action_location"
+        android:title="@string/action_location"/>
+
+    <item
+        android:id="@+id/nav_saved_search_results"
+        android:title="@string/nav_saved_results_title"
+        android:icon="@drawable/ic_action_saved"/>
+
+    <item
+        android:id="@+id/nav_settings"
+        android:title="@string/nav_settings_title"
+        android:icon="@drawable/ic_action_settings"/>
+
+</menu>

@@ -32,7 +32,7 @@ public class OpenWeatherMapUtils {
     /*
      * Set your own APPID here.
      */
-    private final static String OWM_FORECAST_APPID = "INSERT_YOUR_API_KEY_HERE";
+    private final static String OWM_FORECAST_APPID = "ba2386709c047d224d3432dbf3f73113";
 
     public static class ForecastItem implements Serializable {
         public static final String EXTRA_FORECAST_ITEM = "com.example.android.lifecycleweather.utils.ForecastItem.SearchResult";
