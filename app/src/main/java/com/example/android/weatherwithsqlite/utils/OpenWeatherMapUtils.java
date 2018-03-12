@@ -34,6 +34,10 @@ public class OpenWeatherMapUtils {
      */
     private final static String OWM_FORECAST_APPID = "ba2386709c047d224d3432dbf3f73113";
 
+    public static class LocationResult implements Serializable {
+        public String locationDesc;
+    }
+
     public static class ForecastItem implements Serializable {
         public static final String EXTRA_FORECAST_ITEM = "com.example.android.lifecycleweather.utils.ForecastItem.SearchResult";
         public Date dateTime;

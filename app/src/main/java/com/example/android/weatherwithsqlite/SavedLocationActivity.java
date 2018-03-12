@@ -1,18 +1,24 @@
 package com.example.android.weatherwithsqlite;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Path;
+import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.preference.PreferenceManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import com.
 
 import com.example.android.githubsearchwithsqlite.utils.GitHubUtils;
+import com.example.android.weatherwithsqlite.utils.OpenWeatherMapUtils;
 
 import java.util.ArrayList;
 
-public class SavedLocationActivity extends AppCompatActivity implements ForecastAdapter.OnForecastItemClickListener {
+public class SavedLocationActivity extends AppCompatActivity {
 
     private RecyclerView mSavedSearchResultsRV;
     private ForecastAdapter mAdapter;
@@ -23,24 +29,19 @@ public class SavedLocationActivity extends AppCompatActivity implements Forecast
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_saved_location_results);
-
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         mSavedSearchResultsRV = findViewById(R.id.rv_saved_search_results);
         mSavedSearchResultsRV.setLayoutManager(new LinearLayoutManager(this));
         mSavedSearchResultsRV.setHasFixedSize(true);
 
-        GitHubSearchDBHelper dbHelper = new GitHubSearchDBHelper(this);
+        WeatherDBHelper dbHelper = new WeatherDBHelper(this);
         mDB = dbHelper.getReadableDatabase();
 
-        mAdapter = new GitHubSearchAdapter(this);
-        mAdapter.updateSearchResults(getAllSavedReposFromDB());
-        mSavedSearchResultsRV.setAdapter(mAdapter);
-    }
+        onSharedPreferenceChanged()
 
-    @Override
-    public void onSearchItemClick(GitHubUtils.SearchResult searchResult) {
-        Intent detailedSearchResultIntent = new Intent(this, SearchResultDetailActivity.class);
-        detailedSearchResultIntent.putExtra(GitHubUtils.EXTRA_SEARCH_RESULT, searchResult);
-        startActivity(detailedSearchResultIntent);
+        mAdapter = new ForecastAdapter(this);
+        mAdapter.updateForecastItems(getAllSavedReposFromDB());
+        mSavedSearchResultsRV.setAdapter(mAdapter);
     }
 
     @Override
@@ -49,35 +50,27 @@ public class SavedLocationActivity extends AppCompatActivity implements Forecast
         super.onDestroy();
     }
 
-    private ArrayList<GitHubUtils.SearchResult> getAllSavedReposFromDB() {
+    private ArrayList<OpenWeatherMapUtils.LocationResult> getAllSavedReposFromDB() {
         Cursor cursor = mDB.query(
-                GitHubSearchContract.SavedRepos.TABLE_NAME,
+                WeatherSearchContract.SavedRepos.TABLE_NAME,
                 null,
                 null,
                 null,
                 null,
                 null,
-                GitHubSearchContract.SavedRepos.COLUMN_TIMESTAMP + " DESC"
+                WeatherSearchContract.SavedRepos.COLUMN_TIMESTAMP + " DESC"
         );
 
-        ArrayList<GitHubUtils.SearchResult> savedSearchResults = new ArrayList<>();
+        ArrayList<OpenWeatherMapUtils.LocationResult> savedSearchResults = new ArrayList<>();
         while (cursor.moveToNext()) {
-            GitHubUtils.SearchResult searchResult = new GitHubUtils.SearchResult();
-            searchResult.fullName = cursor.getString(
-                    cursor.getColumnIndex(GitHubSearchContract.SavedRepos.COLUMN_FULL_NAME)
-            );
-            searchResult.description = cursor.getString(
-                    cursor.getColumnIndex(GitHubSearchContract.SavedRepos.COLUMN_DESCRIPTION)
-            );
-            searchResult.htmlURL = cursor.getString(
-                    cursor.getColumnIndex(GitHubSearchContract.SavedRepos.COLUMN_URL)
-            );
-            searchResult.stars = cursor.getInt(
-                    cursor.getColumnIndex(GitHubSearchContract.SavedRepos.COLUMN_STARS)
+            OpenWeatherMapUtils.LocationResult searchResult = new OpenWeatherMapUtils.LocationResult();
+            searchResult.locationDesc = cursor.getString(
+                    cursor.getColumnIndex(WeatherSearchContract.SavedRepos.COLUMN_LOCATION_NAME)
             );
             savedSearchResults.add(searchResult);
         }
         cursor.close();
         return savedSearchResults;
     }
+
 }
