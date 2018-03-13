@@ -3,6 +3,8 @@ package com.example.android.weatherwithsqlite;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -28,17 +30,27 @@ import com.example.android.weatherwithsqlite.utils.OpenWeatherMapUtils;
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity
-        implements ForecastAdapter.OnForecastItemClickListener, LoaderManager.LoaderCallbacks<String>, SharedPreferences.OnSharedPreferenceChangeListener, NavigationView.OnNavigationItemSelectedListener {
+        implements ForecastAdapter.OnForecastItemClickListener,
+        LoaderManager.LoaderCallbacks<String>,
+        SharedPreferences.OnSharedPreferenceChangeListener,
+        LocationAdapter.OnLocationItemClickListener
+{
 
     private static final String TAG = MainActivity.class.getSimpleName();
     private static final String FORECAST_URL_KEY = "forecastURL";
     private static final int FORECAST_LOADER_ID = 0;
+
+    //DB Variables
+    private RecyclerView mSavedSearchResultsRV;
+    private LocationAdapter mAdapter;
+    private SQLiteDatabase mDB;
 
     private TextView mForecastLocationTV;
     private RecyclerView mForecastItemsRV;
     private ProgressBar mLoadingIndicatorPB;
     private TextView mLoadingErrorMessageTV;
     private ForecastAdapter mForecastAdapter;
+    public WeatherDBHelper dbHelper;
 
     private DrawerLayout mDrawerLayout;
     private ActionBarDrawerToggle mDrawerToggle;
@@ -51,13 +63,23 @@ public class MainActivity extends AppCompatActivity
         // Remove shadow under action bar.
         getSupportActionBar().setElevation(0);
 
+        //DB initializations
+        mDrawerLayout = findViewById(R.id.drawer_layout);
+        mSavedSearchResultsRV = findViewById(R.id.rv_saved_location_results);
+        mSavedSearchResultsRV.setLayoutManager(new LinearLayoutManager(this));
+        mSavedSearchResultsRV.setHasFixedSize(true);
+
+        //DB Helper
+        dbHelper = new WeatherDBHelper(this);
+        mDB = dbHelper.getReadableDatabase();
+
         mForecastLocationTV = findViewById(R.id.tv_forecast_location);
         mDrawerLayout = findViewById(R.id.drawer_layout);
         mLoadingIndicatorPB = findViewById(R.id.pb_loading_indicator);
         mLoadingErrorMessageTV = findViewById(R.id.tv_loading_error_message);
         mForecastItemsRV = findViewById(R.id.rv_forecast_items);
 
-        mForecastAdapter = new ForecastAdapter(this, this);
+        mForecastAdapter = new ForecastAdapter(this,this);
         mForecastItemsRV.setAdapter(mForecastAdapter);
         mForecastItemsRV.setLayoutManager(new LinearLayoutManager(this));
         mForecastItemsRV.setHasFixedSize(true);
@@ -67,8 +89,12 @@ public class MainActivity extends AppCompatActivity
 
         mDrawerToggle = new ActionBarDrawerToggle(this, mDrawerLayout, R.string.drawer_open, R.string.drawer_close);
         mDrawerLayout.addDrawerListener(mDrawerToggle);
-        NavigationView navigationView = findViewById(R.id.nv_navigation_drawer);
-        navigationView.setNavigationItemSelectedListener(this);
+
+        //DB Adapter and Recycler View
+        mAdapter = new LocationAdapter(this,this);
+        mAdapter.updateLocationItems(getAllSavedReposFromDB());
+        mSavedSearchResultsRV.setAdapter(mAdapter);
+        mSavedSearchResultsRV.setHasFixedSize(true);
 
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         sharedPreferences.registerOnSharedPreferenceChangeListener(this);
@@ -78,6 +104,7 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onDestroy() {
         PreferenceManager.getDefaultSharedPreferences(this).unregisterOnSharedPreferenceChangeListener(this);
+        mDB.close();
         super.onDestroy();
     }
 
@@ -88,32 +115,6 @@ public class MainActivity extends AppCompatActivity
         startActivity(intent);
     }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.main, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        switch (item.getItemId()) {
-            case R.id.action_location:
-                showForecastLocationInMap();
-                return true;
-            case R.id.nav_saved_search_results:
-                mDrawerLayout.closeDrawers();
-                //Intent savedResultsIntent = new Intent(this, SavedSearchResultsActivity.class);
-                //startActivity(savedResultsIntent);
-                return true;
-            case R.id.action_settings:
-                mDrawerLayout.closeDrawers();
-                Intent settingsIntent = new Intent(this, SettingsActivity.class);
-                startActivity(settingsIntent);
-                return true;
-            default:
-                return false;
-        }
-    }
 
     public void loadForecast(SharedPreferences sharedPreferences, boolean initialLoad) {
         String forecastLocation = sharedPreferences.getString(
@@ -185,6 +186,12 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+        String forecastLocation = sharedPreferences.getString(
+                getString(R.string.pref_location_key),
+                getString(R.string.pref_location_default_value)
+        );
+        dbHelper.checkIsPrefSaved(mDB,forecastLocation);
+        mAdapter.updateLocationItems(getAllSavedReposFromDB());
         loadForecast(sharedPreferences, false);
     }
 
@@ -201,7 +208,78 @@ public class MainActivity extends AppCompatActivity
     }
 
     @Override
-    public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-        return false;
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.main, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (mDrawerToggle.onOptionsItemSelected(item)) {
+            return true;
+        } else {
+            switch (item.getItemId()) {
+                case R.id.action_location:
+                    showForecastLocationInMap();
+                    return true;
+                case R.id.action_settings:
+                    Intent settingsIntent = new Intent(this, SettingsActivity.class);
+                    startActivity(settingsIntent);
+                    return true;
+                default:
+                    return super.onOptionsItemSelected(item);
+            }
+
+        }
+    }
+
+//    @Override
+//    public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+//        switch (item.getItemId()) {
+//            case R.id.action_location:
+//                mDrawerLayout.closeDrawers();
+//                showForecastLocationInMap();
+//                return true;
+//            case R.id.nav_settings:
+//                mDrawerLayout.closeDrawers();
+//                Intent settingsIntent = new Intent(this, SettingsActivity.class);
+//                startActivity(settingsIntent);
+//                return true;
+//            default:
+//                return false;
+//        }
+//    }
+
+    @Override
+    public void onLocationItemClick(OpenWeatherMapUtils.LocationResult item){
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        SharedPreferences.Editor prefEditor = sharedPreferences.edit();
+        prefEditor.putString(getString(R.string.pref_location_key), item.locationDesc);
+        prefEditor.apply();
+        mDrawerLayout.closeDrawers();
+
+    }
+
+    private ArrayList<OpenWeatherMapUtils.LocationResult> getAllSavedReposFromDB() {
+        Cursor cursor = mDB.query(
+                WeatherSearchContract.SavedRepos.TABLE_NAME,
+                null,
+                null,
+                null,
+                null,
+                null,
+                WeatherSearchContract.SavedRepos.COLUMN_TIMESTAMP + " DESC"
+        );
+
+        ArrayList<OpenWeatherMapUtils.LocationResult> savedSearchResults = new ArrayList<>();
+        while (cursor.moveToNext()) {
+            OpenWeatherMapUtils.LocationResult searchResult = new OpenWeatherMapUtils.LocationResult();
+            searchResult.locationDesc = cursor.getString(
+                    cursor.getColumnIndex(WeatherSearchContract.SavedRepos.COLUMN_LOCATION_NAME)
+            );
+            savedSearchResults.add(searchResult);
+        }
+        cursor.close();
+        return savedSearchResults;
     }
 }

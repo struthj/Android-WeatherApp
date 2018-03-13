@@ -34,6 +34,13 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="com.example.android.weatherwithsqlite.MainActivity" />
         </activity>
+        <activity
+            android:name="com.example.android.weatherwithsqlite.SavedLocationActivity"
+            android:parentActivityName="com.example.android.weatherwithsqlite.MainActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.example.android.weatherwithsqlite.MainActivity" />
+        </activity>
     </application>
 
 </manifest>

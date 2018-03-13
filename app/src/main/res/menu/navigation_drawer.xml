@@ -7,11 +7,6 @@
         android:title="@string/action_location"/>
 
     <item
-        android:id="@+id/nav_saved_search_results"
-        android:title="@string/nav_saved_results_title"
-        android:icon="@drawable/ic_action_saved"/>
-
-    <item
         android:id="@+id/nav_settings"
         android:title="@string/nav_settings_title"
         android:icon="@drawable/ic_action_settings"/>

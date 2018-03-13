@@ -77,10 +77,14 @@ public class ForecastAdapter extends RecyclerView.Adapter<ForecastAdapter.Foreca
                     mContext.getString(R.string.pref_units_key),
                     mContext.getString(R.string.pref_units_default_value)
             );
+            String location = sharedPreferences.getString(
+                    mContext.getString(R.string.pref_location_key),
+                    mContext.getString(R.string.pref_location_default_value)
+            );
             String temperatureUnitsAbbr = OpenWeatherMapUtils.getTemperatureUnitsAbbr(mContext, temperatureUnitsValue);
 
             String dateString = mDateFormatter.format(forecastItem.dateTime);
-            String detailString = forecastItem.temperature + temperatureUnitsAbbr + " - " + forecastItem.description;
+            String detailString = forecastItem.temperature + temperatureUnitsAbbr + " - " + forecastItem.description + " - " + location;
             mForecastDateTV.setText(dateString);
             mForecastTempDescriptionTV.setText(detailString);
         }
